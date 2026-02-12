@@ -3,8 +3,26 @@
 ## Super Resolution of Satellite-based Land Surface Temperature through Airborne Thermal Imaging
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Paper](https://img.shields.io/badge/paper-arXiv-red.svg)](https://arxiv.org/abs/xxxx.xxxxx)
+
+
+If you use this work in your research, please cite:
+
+```bibtex
+@article{beber2025ThSR,
+  AUTHOR = {Beber, Raniero and Malek, Salim and Remondino, Fabio},
+  TITLE = {Super Resolution of Satellite-Based Land Surface Temperature Through Airborne Thermal Imaging},
+  JOURNAL = {Remote Sensing},
+  VOLUME = {17},
+  YEAR = {2025},
+  NUMBER = {22},
+  ARTICLE-NUMBER = {3766},
+  URL = {https://www.mdpi.com/2072-4292/17/22/3766},
+  ISSN = {2072-4292},
+  DOI = {10.3390/rs17223766}
+}
+```
 
 ## Abstract
 
@@ -22,47 +40,12 @@ This framework leverages open-source data from missions like Landsat to provide 
 - **Cost-effective Solution**: Uses freely available satellite data to generate high-resolution thermal maps
 - **Operational Framework**: Enables frequent thermal monitoring for municipalities
 
-## Repository Structure
 
-```
-├── data/
-│   ├── landsat/          # Landsat thermal imagery
-│   ├── airborne/         # High-resolution reference data
-│   ├── ancillary/        # Auxiliary datasets (DEM, NDVI, etc.)
-│   └── processed/        # Preprocessed training data
-├── src/
-│   ├── models/
-│   │   ├── dst_unet.py   # DST-UNet architecture
-│   │   └── losses.py     # Custom loss functions
-│   ├── data/
-│   │   ├── preprocessing.py
-│   │   ├── data_loader.py
-│   │   └── augmentation.py
-│   ├── training/
-│   │   ├── train.py      # Main training script
-│   │   └── validate.py   # Validation utilities
-│   └── utils/
-│       ├── metrics.py    # Evaluation metrics
-│       └── visualization.py
-├── configs/
-│   ├── dst_unet_config.yaml
-│   └── training_config.yaml
-├── notebooks/
-│   ├── data_exploration.ipynb
-│   ├── model_analysis.ipynb
-│   └── results_visualization.ipynb
-├── experiments/
-│   └── results/          # Training logs and outputs
-├── pretrained/           # Pre-trained model weights
-├── requirements.txt
-├── environment.yml
-└── README.md
-```
 
 ## Installation
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.10 or higher
 - CUDA-capable GPU (recommended)
 - 16GB+ RAM recommended
 
@@ -77,22 +60,19 @@ cd Thermal_SR
 conda env create -f environment.yml
 conda activate dst-unet
 
-# Or use pip
-pip install -r requirements.txt
 ```
 
 ### Key Dependencies
-- PyTorch >= 1.9.0
-- torchvision >= 0.10.0
-- rasterio >= 1.2.0
-- scikit-image >= 0.18.0
-- scikit-learn >= 1.0.0 (for Random Forest classification)
-- matplotlib >= 3.3.0
-- numpy >= 1.21.0
-- pandas >= 1.3.0
-- scipy >= 1.7.0
-- opencv-python >= 4.5.0
-- spectral >= 0.22 (for hyperspectral processing)
+- PyTorch >= 2.5
+- torchvision >= 0.20
+- rasterio >= 1.4.3
+- scikit-image >= 0.25
+- scikit-learn >= 1.4
+- matplotlib >= 3.8
+- numpy >= 1.26
+- pandas >= 2.3
+- scipy >= 1.11
+- opencv-python >= 4.8
 
 ## Dataset
 
@@ -122,21 +102,6 @@ The dataset is spatially divided to prevent data leakage:
 
 **Tile Size Rationale**: 256m coverage ensures sufficient spatial context for learning multiscale urban thermal patterns.
 
-### Data Preparation
-
-```bash
-# Download and preprocess Landsat data
-python src/data/preprocessing.py --config configs/data_config.yaml
-
-# Apply atmospheric corrections
-python src/data/atmospheric_correction.py --landsat_dir data/landsat --method ermida2020
-
-# Resample orthophoto channels
-python src/data/resample_orthophoto.py --input_res 0.1 --output_res 0.5 --method median
-
-# Generate training tiles with spatial split
-python src/data/prepare_training_data.py --input_dir data/raw --output_dir data/processed --tile_size 512 --overlap 0
-```
 
 ## Model Architecture
 
@@ -171,34 +136,6 @@ The Mean Absolute Error (MAE) between predicted (*y*) and ground truth (*x*) ima
 MAE = (1/N) * Σ|x_i - y_i|
 ```
 where N is the total number of pixels.
-
-### Quick Start
-```bash
-# Train DST-UNet with default configuration
-python src/training/train.py --config configs/dst_unet_config.yaml
-
-# Resume training from checkpoint
-python src/training/train.py --config configs/dst_unet_config.yaml --resume experiments/checkpoints/model_epoch_50.pth
-```
-
-### Custom Training
-```bash
-# Train with custom parameters
-python src/training/train.py \
-    --batch_size 16 \
-    --learning_rate 1e-4 \
-    --epochs 100 \
-    --optimizer adam \
-    --loss_function mae \
-    --gpu_ids 0,1
-```
-
-### Configuration
-Modify `configs/dst_unet_config.yaml` to adjust:
-- Model hyperparameters
-- Training settings
-- Data paths
-- Augmentation options
 
 ## Evaluation
 
@@ -240,17 +177,6 @@ DST-UNet is compared against established super-resolution methods:
 - **VDSR4DEM**: Modified VDSR for Digital Surface Models - 8 layers with 9×9 kernels for geospatial data
 
 All benchmark models are retrained on the same dataset for fair comparison.
-
-```bash
-# Evaluate trained model
-python src/evaluate.py --model_path pretrained/dst_unet_best.pth --test_data data/test/
-
-# Compare with baseline models
-python src/compare_models.py --models dst_unet,edsr,vdsr,vdsr4dem --test_data data/test/
-
-# Generate thermal maps
-python src/inference.py --input_image data/landsat_sample.tif --model_path pretrained/dst_unet_best.pth
-```
 
 ## Results
 
@@ -296,16 +222,6 @@ High-resolution thermal maps generated by DST-UNet show significant improvement 
 - Heat island boundaries and thermal gradients
 - Fine-scale thermal heterogeneity within urban blocks
 
-## Pre-trained Models
-
-Download pre-trained weights from [releases](https://github.com/rbeber/Thermal_SR/releases):
-
-```bash
-# Download and use pre-trained model
-wget https://github.com/rbeber/Thermal_SR/releases/download/v1.0/dst_unet_pretrained.pth
-python src/inference.py --model_path dst_unet_pretrained.pth --input your_landsat_image.tif
-```
-
 ## Applications
 
 ### Urban Planning
@@ -328,21 +244,25 @@ python src/inference.py --model_path dst_unet_pretrained.pth --input your_landsa
 If you use this work in your research, please cite:
 
 ```bibtex
-@article{beber2025super,
-  title={Super Resolution of Satellite-based Land Surface Temperature through Airborne Thermal Imaging},
-  author={Beber, Raniero and Malek, Salim and Remondino, Fabio},
-  journal={Journal Name},
-  year={2025},
-  volume={X},
-  pages={XXX-XXX}
+@article{beber2025ThSR,
+  AUTHOR = {Beber, Raniero and Malek, Salim and Remondino, Fabio},
+  TITLE = {Super Resolution of Satellite-Based Land Surface Temperature Through Airborne Thermal Imaging},
+  JOURNAL = {Remote Sensing},
+  VOLUME = {17},
+  YEAR = {2025},
+  NUMBER = {22},
+  ARTICLE-NUMBER = {3766},
+  URL = {https://www.mdpi.com/2072-4292/17/22/3766},
+  ISSN = {2072-4292},
+  DOI = {10.3390/rs17223766}
 }
 ```
 
 ## Acknowledgments
 
 - Landsat data courtesy of the U.S. Geological Survey
-- Airborne thermal data from [Data Source]
-- Computing resources provided by [Institution/Cloud Provider]
+- Airborne thermal data from [AVT Airborne Sensing GmbH]
+- Computing resources provided by [FBK DICLUB cluster]
 
 ## Contact
 
@@ -350,7 +270,7 @@ If you use this work in your research, please cite:
 - **Co-authors**: Salim Malek, Fabio Remondino
 - **Affiliation**: ¹Fondazione Bruno Kessler (FBK)
 - **Project Link**: https://github.com/rbeber/Thermal_SR
-- **Paper**: [arXiv link or journal link]
+- **Paper**: https://doi.org/10.3390/rs17223766
 
 ---
 
